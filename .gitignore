@@ -1,0 +1,7 @@
+.DS_Store
+._*
+node_modules/
+.env
+.env.*
+codex_tmp/
+*.log
