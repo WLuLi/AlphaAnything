@@ -1,0 +1,85 @@
+task: text_to_rgba
+model:
+  pretrained_model_name_or_path: black-forest-labs/FLUX.2-klein-base-9B
+  local_files_only: false
+  adapter_name: flux2_klein_base_9b_t2rgba
+  max_sequence_length: 512
+  text_encoder_out_layers: [9, 18, 27]
+  lora_rank: 64
+  lora_alpha: 128
+  lora_dropout: 0.0
+  lora_init_weights: gaussian
+  lora_target_modules: [to_q, to_k, to_v, to_out.0, to_qkv_mlp_proj]
+data:
+  dataset_name: data/train/t2rgba_train/train.csv
+  eval_dataset_name: null
+  image_column: image
+  caption_column: caption
+  short_caption_column: short_caption
+  short_caption_probability: 0.2
+  implicit_caption_column: implicit_caption
+  implicit_short_caption_column: implicit_short_caption
+  implicit_caption_probability: 0.5
+  resolution: 1024
+  bucket_by_aspect_ratio: true
+  bucket_size_multiple: 32
+  bucket_aspect_ratios: auto
+  num_workers: 4
+runtime:
+  seed: 42
+vae_alpha_adapter:
+  stage_channels: [256, 256, 192, 128, 96]
+  injection_rank: 64
+  injection_alpha: 64
+  injection_init_std: 0.0001
+  injection_stage_gates: [1.0, 0.75, 0.5, 0.25, 0.25]
+  dropout: 0.0
+  res_blocks_per_stage: 2
+  attention_heads: 8
+  head_channels: 128
+  score_output_init_std: 0.0001
+training:
+  mixed_precision: bf16
+  gradient_checkpointing: true
+  vae_activation_checkpointing: false
+  per_device_batch_size: 1
+  gradient_accumulation_steps: 2
+  text_dropout_probability: 0.1
+  text_dropout_null_prompt: ' '
+  max_train_steps: 20000
+  log_steps: 10
+  report_to: tensorboard
+evaluation:
+  enabled: false
+  every_steps: 250
+  selection: random
+  inference_samples: 4
+  inference_steps: 50
+  inference_seed: 42
+  guidance_scale: 4.0
+  negative_prompt: ' '
+optimizer:
+  dit_learning_rate: 1.0e-4
+  vae_learning_rate: 1.0e-4
+  beta1: 0.9
+  beta2: 0.999
+  weight_decay: 0.01
+  epsilon: 1.0e-8
+  lr_scheduler: cosine
+  warmup_steps: 100
+  max_grad_norm: 1.0
+flow:
+  num_train_timesteps: 1000
+  shift: 3.0
+  min_timestep: 1
+  max_timestep: 999
+  x0_clip: 20.0
+loss:
+  latent_flow_weight: 1.0
+  ea_loss_weight: 1.0
+  image_weight_reference_sigma: 0.5
+  image_weight_epsilon: 0.0001
+checkpoint:
+  output_dir: outputs/train/flux2_klein_base_9b_t2rgba
+  save_steps: 1000
+  resume_from: null

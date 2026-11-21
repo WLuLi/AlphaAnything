@@ -1,0 +1,48 @@
+AlphaAnything — upstream acknowledgments
+
+AlphaAnything extends pretrained RGB generation models with transformer LoRA
+adapters and an alpha decoder branch. We thank the authors and maintainers of
+the upstream models and libraries used by this implementation.
+
+Pretrained models
+
+- Black Forest Labs, FLUX.2 Klein Base 9B & FLUX.2 Klein 9B
+  https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B
+  https://huggingface.co/black-forest-labs/FLUX.2-klein-9B
+  Upstream license: FLUX non-commercial license.
+  https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B/blob/main/LICENSE.md
+  https://huggingface.co/black-forest-labs/FLUX.2-klein-9B/blob/main/LICENSE.md
+
+- Qwen, Qwen-Image-2512
+  https://huggingface.co/Qwen/Qwen-Image-2512
+  Upstream license: Apache-2.0.
+  https://huggingface.co/Qwen/Qwen-Image-2512/blob/main/LICENSE
+
+- Qwen, Qwen-Image-Edit-2511
+  https://huggingface.co/Qwen/Qwen-Image-Edit-2511
+  Upstream license: Apache-2.0.
+  https://huggingface.co/Qwen/Qwen-Image-Edit-2511/blob/main/LICENSE
+
+Libraries and related work
+
+- Hugging Face Diffusers: model pipelines and LoRA serialization.
+  https://github.com/huggingface/diffusers
+
+- Hugging Face PEFT: parameter-efficient adapter support.
+  https://github.com/huggingface/peft
+
+- Hugging Face Transformers, Accelerate, and Safetensors.
+  https://github.com/huggingface/transformers
+  https://github.com/huggingface/accelerate
+  https://github.com/huggingface/safetensors
+
+- PyTorch and Torchvision: model execution, training, and image processing.
+  https://github.com/pytorch/pytorch
+  https://github.com/pytorch/vision
+
+- LayerDiffuse: transparent-image color padding used in data preparation.
+  https://github.com/lllyasviel/sd-forge-layerdiffuse
+
+The upstream model licenses are separate from the license of this repository's
+code. This notice identifies upstream sources and does not replace their
+original license texts or copyright notices.

@@ -1,0 +1,15 @@
+# Install a CUDA-enabled PyTorch build appropriate for your GPU first if needed.
+torch>=2.12
+torchvision
+diffusers
+transformers
+accelerate
+peft
+safetensors
+huggingface_hub
+Pillow
+numpy
+PyYAML
+pyarrow
+tensorboard
+tqdm

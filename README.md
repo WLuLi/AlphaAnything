@@ -7,7 +7,7 @@
 <p>
   <a href="mailto:wqj24@mails.tsinghua.edu.cn">Qijie Wang</a><sup>1,2,*,‡</sup> &nbsp;
   Zhixin Xu<sup>2,*</sup> &nbsp;
-  Zhe Li<sup>3,2</sup> &nbsp;
+  Zhe Li<sup>3,2,‡</sup> &nbsp;
   Haowei Zhu<sup>1</sup><br />
   Honghao Qiao<sup>2</sup> &nbsp;
   Bo Peng<sup>2</sup> &nbsp;
@@ -21,7 +21,8 @@
 
 [![Project Page](https://img.shields.io/badge/Project_Page-5146DC?style=for-the-badge&logo=googlechrome&logoColor=white)](https://wluli.github.io/AlphaAnything/)
 [![arXiv:2610.32413](https://img.shields.io/badge/arXiv-2610.32413-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2610.32413)
-[![Code status](https://img.shields.io/badge/Code-Coming_Soon-697386?style=for-the-badge&logo=github&logoColor=white)](#timeline)
+[![Checkpoints](https://img.shields.io/badge/Hugging_Face-Checkpoints-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything)
+[![Training Data](https://img.shields.io/badge/Hugging_Face-Training_Data-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/WLuLi/AlphaAnything_Data)
 
 </div>
 
@@ -31,19 +32,125 @@
   <sub>All elements, including the title, are generated or extracted with AlphaAnything and manually arranged into the final composition.</sub>
 </p>
 
-## Timeline
+---
 
-- **2026-10-26** — arXiv and Project Page release.
-- **Code and Checkpoint: Coming Soon.**
+## 📅 Timeline
 
-## ✨ Overview
+- **2026-11-22** — Code, Training Data, and Checkpoint release ([Checkpoints](https://huggingface.co/WLuLi/AlphaAnything) · [Training Data](https://huggingface.co/datasets/WLuLi/AlphaAnything_Data)).
+- **2026-10-26** — arXiv paper and Project Page release.
 
-**AlphaAnything** extends pretrained RGB generators to RGBA **in their original latent space**, without a separate RGBA reconstruction pretraining stage. A lightweight alpha branch learns opacity alongside appearance, turning generated or extracted content into transparent layers.
+## 📦 Supported Models
 
-- **Native RGBA generation.** Generate an individual transparent asset from a text prompt.
-- **Prompt-guided extraction.** Extract a requested object or graphic element from an image, including fine details and partial transparency.
-- **Preserved RGB decoding.** Freeze the pretrained RGB VAE and share features only from RGB to alpha; the RGB decoding function remains identical for any fixed latent.
-- **Endpoint-Aware Alpha Loss.** Supervise exact transparent and opaque endpoints, continuous partial transparency, and localized alpha errors.
+| Base Model | Task | Inference | Training | Adapter Weights |
+| :--- | :---: | :---: | :---: | :---: |
+| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Text → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_t2rgba) |
+| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Image → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_i2rgba) |
+| [Qwen-Image-2512](https://huggingface.co/Qwen/Qwen-Image-2512) | Text → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_2512_t2rgba) |
+| [Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) | Image → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_edit_2511_i2rgba) |
+
+> [!NOTE]
+> - Each adapter bundle packages only the transformer LoRA and alpha decoder branch; upstream RGB backbones are loaded automatically via Diffusers and remain subject to their respective licenses (see [NOTICE](NOTICE)).
+> - Both FLUX.2 Klein adapters trained on `FLUX.2-klein-base-9B` can also be loaded directly onto the 4-step distilled `FLUX.2-klein-9B` via `--base-model`. Because they were trained on the Base model, 4-step inference works well in most cases but may occasionally be less reliable than `FLUX.2-klein-base-9B`.
+
+## 🛠️ Installation
+
+```bash
+git clone https://github.com/WLuLi/AlphaAnything.git
+cd AlphaAnything
+pip install -r requirements.txt
+```
+
+Download the pretrained adapters into `alphaanything/checkpoints/`:
+
+```bash
+huggingface-cli download WLuLi/AlphaAnything --local-dir alphaanything/checkpoints
+```
+
+## 🚀 Inference
+
+Each run writes `sample.png` (RGBA), previews under `previews/`, and `metadata.json`. For Image-to-RGBA, describe the target object with `--description` (automatically wrapped into our extraction instruction), or pass a full custom instruction directly with `--prompt`.
+
+```bash
+# Text to RGBA (FLUX.2 Klein Base 9B)
+python scripts/flux2_klein/infer_t2rgba.py \
+  --checkpoint alphaanything/checkpoints/flux2_klein_base_9b_t2rgba \
+  --prompt "A delicate glass butterfly with translucent wings, isolated on a transparent background." \
+  --output-dir outputs/flux2_klein_base_t2rgba \
+  --num-inference-steps 50 --guidance-scale 4.0 --seed 42
+
+# Image to RGBA (FLUX.2 Klein Base 9B)
+python scripts/flux2_klein/infer_i2rgba.py \
+  --checkpoint alphaanything/checkpoints/flux2_klein_base_9b_i2rgba \
+  --image assets/poster.png \
+  --description "The potted monstera on the left, including its three green leaves with broad openings, their stems, and the speckled cream ceramic pot." \
+  --output-dir outputs/flux2_klein_base_i2rgba \
+  --num-inference-steps 50 --guidance-scale 4.0 --seed 42
+```
+
+<details>
+<summary><b>More backbones (FLUX.2 Klein 9B 4-step &amp; Qwen-Image / Qwen-Image-Edit)</b></summary>
+
+```bash
+# Text to RGBA — FLUX.2 Klein 9B (4-step)
+python scripts/flux2_klein/infer_t2rgba.py \
+  --checkpoint alphaanything/checkpoints/flux2_klein_base_9b_t2rgba \
+  --base-model black-forest-labs/FLUX.2-klein-9B \
+  --prompt "An ivory vintage lace parasol with intricate openwork embroidery and a slender wooden handle, isolated on a transparent background." \
+  --output-dir outputs/flux2_klein_4step_t2rgba \
+  --num-inference-steps 4 --guidance-scale 1.0 --seed 42
+
+# Image to RGBA — FLUX.2 Klein 9B (4-step)
+python scripts/flux2_klein/infer_i2rgba.py \
+  --checkpoint alphaanything/checkpoints/flux2_klein_base_9b_i2rgba \
+  --base-model black-forest-labs/FLUX.2-klein-9B \
+  --image assets/poster.png \
+  --prompt 'Give me only the smaller line "Everyday rituals, beautifully made." on a transparent background.' \
+  --output-dir outputs/flux2_klein_4step_i2rgba \
+  --num-inference-steps 4 --guidance-scale 1.0 --seed 42
+
+# Text to RGBA — Qwen-Image-2512
+python scripts/qwen_image/infer_t2rgba.py \
+  --checkpoint alphaanything/checkpoints/qwen_image_2512_t2rgba \
+  --prompt "A delicate translucent glass bird with fine crystal feathers and soft blue reflections, isolated on a transparent background." \
+  --output-dir outputs/qwen_image_t2rgba \
+  --num-inference-steps 50 --guidance-scale 4.0 --seed 42
+
+# Image to RGBA — Qwen-Image-Edit-2511
+python scripts/qwen_image_edit/infer_i2rgba.py \
+  --checkpoint alphaanything/checkpoints/qwen_image_edit_2511_i2rgba \
+  --image assets/poster.png \
+  --description "The clear wine glass on the right, including its translucent bowl filled with deep red wine, slender glass stem, and round base." \
+  --output-dir outputs/qwen_image_edit_i2rgba \
+  --num-inference-steps 50 --guidance-scale 4.0 --seed 42
+```
+
+</details>
+
+## 📚 Data Preparation
+
+Download and prepare our training datasets ([`WLuLi/AlphaAnything_Data`](https://huggingface.co/datasets/WLuLi/AlphaAnything_Data) for Text-to-RGBA and `PrismLayersPro` annotations for Image-to-RGBA) following the step-by-step instructions in **[docs/data.md](docs/data.md)**.
+
+## 🏋️ Training
+
+Training is supported for **FLUX.2 Klein Base 9B** on both Text-to-RGBA and Image-to-RGBA via Accelerate DDP.
+
+- **Default setup**: 8 GPUs, effective batch size `16` (`per_device_batch_size=1`, `grad_accum=2`), `20,000` steps, `bf16`, LoRA `r=64 / alpha=128`, AdamW `1e-4` with cosine schedule.
+- **Configs**: [`configs/flux2_klein/train_base_9b_t2rgba.yaml`](configs/flux2_klein/train_base_9b_t2rgba.yaml) · [`configs/flux2_klein/train_base_9b_i2rgba.yaml`](configs/flux2_klein/train_base_9b_i2rgba.yaml)
+
+After preparing the datasets, edit paths or hyperparameters in the launch scripts as needed and run:
+
+```bash
+# Text-to-RGBA
+bash scripts/flux2_klein/run_train_t2rgba.sh
+
+# Image-to-RGBA
+bash scripts/flux2_klein/run_train_i2rgba.sh
+```
+
+> [!TIP]
+> Saved checkpoints (`outputs/train/.../checkpoint-N`) can be passed directly to `--checkpoint` for inference, or resumed by setting `--resume_from` in the launch script or YAML.
+
+---
 
 ## 🧩 Method
 
@@ -51,13 +158,7 @@
   <img src="assets/method.webp" alt="AlphaAnything trains transformer LoRA and an alpha decoder branch while keeping the pretrained RGB VAE frozen. The RGB and alpha branches use a shared latent with one-way feature sharing." width="100%" />
 </p>
 
-1. **Keep the original RGB latent space.** The pretrained RGB encoder and decoder remain frozen.
-2. **Learn appearance and opacity jointly.** Transformer LoRA and the alpha branch are optimized with flow matching and alpha supervision. RGB-to-alpha feature sharing lets alpha supervision shape the generative latent.
-3. **Supervise compositing behavior.** EA Loss derives opacity supervision from the complementary foreground and background weights used in alpha compositing.
-
-The fixed-latent preservation property concerns the **RGB decoder**; adapting the generative transformer can change the latents it produces.
-
-## 🖼️ Qualitative examples
+## 🖼️ Qualitative Examples
 
 ### Text to transparent assets
 
@@ -83,9 +184,9 @@ The fixed-latent preservation property concerns the **RGB decoder**; adapting th
   <img src="assets/figure1.png" alt="Figure 1 from the paper: text-to-RGBA layer composition and image-to-RGBA layer decomposition." width="100%" />
 </p>
 
-## Citation
+## 📝 Citation
 
-Please cite the paper as:
+If you find AlphaAnything useful in your research, please consider citing:
 
 ```bibtex
 @misc{wang2026alphaanything,
@@ -104,4 +205,4 @@ Contact: [Qijie Wang](mailto:wqj24@mails.tsinghua.edu.cn).
 
 ## Acknowledgments
 
-We thank the authors of the pretrained RGB models used in this work.
+We thank the authors of the pretrained RGB models and open-source libraries used in this work.
