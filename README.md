@@ -63,7 +63,7 @@ pip install -r requirements.txt
 Download the pretrained adapters into `alphaanything/checkpoints/`:
 
 ```bash
-huggingface-cli download WLuLi/AlphaAnything --local-dir alphaanything/checkpoints
+hf download WLuLi/AlphaAnything --local-dir alphaanything/checkpoints
 ```
 
 ## 🚀 Inference
