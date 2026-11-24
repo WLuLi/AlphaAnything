@@ -81,6 +81,13 @@ class SinglePassRGBAFlux2VAE(nn.Module):
         score = self.alpha_decoder.ea_score_head(alpha, use_activation_checkpoint=use_activation_checkpoint)[:, :, 0]
         return rgb.clamp(-1.0, 1.0) if clamp_rgb else rgb, score
 
+    def decode_rgb(self, normalized_latents: torch.Tensor, *, clamp_rgb: bool = True) -> torch.Tensor:
+        value = normalized_latents.to(next(self.vae.parameters()))
+        mean, std = self._bn_stats(value)
+        value = Flux2KleinPipeline._unpatchify_latents(value * std + mean)
+        rgb = self.vae.decode(value, return_dict=False)[0]
+        return rgb.clamp(-1.0, 1.0) if clamp_rgb else rgb
+
     def forward(
         self,
         value: torch.Tensor,
@@ -91,6 +98,8 @@ class SinglePassRGBAFlux2VAE(nn.Module):
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         if operation == "encode_normalized_mode":
             return self.encode_normalized_mode(value)
+        if operation == "decode_rgb":
+            return self.decode_rgb(value, clamp_rgb=clamp_rgb)
         if operation == "decode_rgba":
             ckpt = use_activation_checkpoint and torch.is_grad_enabled() and (
                 value.requires_grad or any(p.requires_grad for p in self.alpha_decoder.parameters())

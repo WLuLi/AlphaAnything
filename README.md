@@ -21,8 +21,8 @@
 
 [![Project Page](https://img.shields.io/badge/Project_Page-5146DC?style=for-the-badge&logo=googlechrome&logoColor=white)](https://wluli.github.io/AlphaAnything/)
 [![arXiv:2610.32413](https://img.shields.io/badge/arXiv-2610.32413-B31B1B?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2610.32413)
-[![Checkpoints](https://img.shields.io/badge/Hugging_Face-Checkpoints-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything)
-[![Training Data](https://img.shields.io/badge/Hugging_Face-Training_Data-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/datasets/WLuLi/AlphaAnything_Data)
+[![Checkpoints](https://img.shields.io/badge/Hugging_Face-Checkpoints-FFD21E?style=for-the-badge&logo=huggingface&logoColor=FFD21E)](https://huggingface.co/WLuLi/AlphaAnything)
+[![Training Data](https://img.shields.io/badge/Hugging_Face-Training_Data-FFD21E?style=for-the-badge&logo=huggingface&logoColor=FFD21E)](https://huggingface.co/datasets/WLuLi/AlphaAnything_Data)
 
 </div>
 
@@ -43,14 +43,15 @@
 
 | Base Model | Task | Inference | Training | Adapter Weights |
 | :--- | :---: | :---: | :---: | :---: |
-| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Text → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_t2rgba) |
-| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Image → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_i2rgba) |
-| [Qwen-Image-2512](https://huggingface.co/Qwen/Qwen-Image-2512) | Text → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_2512_t2rgba) |
-| [Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) | Image → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_edit_2511_i2rgba) |
+| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Text → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=FFD21E)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_t2rgba) |
+| FLUX.2 Klein 9B ([Base](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-9B) / [4-step](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)) | Image → RGBA | ✅ | ✅ (Base) | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=FFD21E)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/flux2_klein_base_9b_i2rgba) |
+| [Qwen-Image-2512](https://huggingface.co/Qwen/Qwen-Image-2512) | Text → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-T2RGBA-FFD21E?logo=huggingface&logoColor=FFD21E)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_2512_t2rgba) |
+| [Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) | Image → RGBA | ✅ | — | [![Hugging Face](https://img.shields.io/badge/Hugging_Face-I2RGBA-FFD21E?logo=huggingface&logoColor=FFD21E)](https://huggingface.co/WLuLi/AlphaAnything/tree/main/qwen_image_edit_2511_i2rgba) |
 
 > [!NOTE]
 > - Each adapter bundle packages only the transformer LoRA and alpha decoder branch; upstream RGB backbones are loaded automatically via Diffusers and remain subject to their respective licenses (see [NOTICE](NOTICE)).
 > - Both FLUX.2 Klein adapters trained on `FLUX.2-klein-base-9B` can also be loaded directly onto the 4-step distilled `FLUX.2-klein-9B` via `--base-model`. Because they were trained on the Base model, 4-step inference works well in most cases but may occasionally be less reliable than `FLUX.2-klein-base-9B`.
+> - The default `main` Image-to-RGBA adapters support both foreground and background-layer extraction (retrained under the same recipe by compositing `PrismLayersPro` foreground layers onto clean generated backgrounds). To strictly reproduce the foreground-only results reported in the paper, download the original weights via `hf download WLuLi/AlphaAnything --revision paper --local-dir alphaanything/checkpoints`.
 
 ## 🛠️ Installation
 
@@ -68,7 +69,7 @@ hf download WLuLi/AlphaAnything --local-dir alphaanything/checkpoints
 
 ## 🚀 Inference
 
-Each run writes `sample.png` (RGBA), previews under `previews/`, and `metadata.json`. For Image-to-RGBA, describe the target object with `--description` (automatically wrapped into our extraction instruction), or pass a full custom instruction directly with `--prompt`.
+Each run writes `sample.png` (RGBA), previews under `previews/`, and `metadata.json`. For Image-to-RGBA, describe the target object with `--description` (automatically wrapped into our extraction instruction), or pass a full custom instruction directly with `--prompt`. Pass `--disable-alpha` to turn off the LoRA and alpha branch and run native base-model RGB generation.
 
 ```bash
 # Text to RGBA (FLUX.2 Klein Base 9B)
@@ -122,6 +123,65 @@ python scripts/qwen_image_edit/infer_i2rgba.py \
   --description "The clear wine glass on the right, including its translucent bowl filled with deep red wine, slender glass stem, and round base." \
   --output-dir outputs/qwen_image_edit_i2rgba \
   --num-inference-steps 50 --guidance-scale 4.0 --seed 42
+```
+
+</details>
+
+<details>
+<summary><b>Python API &amp; Persistent HTTP Server (runtime RGB/RGBA &amp; multi-adapter switching)</b></summary>
+
+Because the transformer LoRA is kept unmerged and the alpha branch is a one-way sidecar, a single loaded base model can switch between **native RGB** and **RGBA** (or across multiple adapters sharing the same backbone, such as FLUX.2 Klein T2RGBA and I2RGBA) with zero weight reload or precision drift:
+
+```python
+from alphaanything import AlphaAnythingPipeline
+
+pipe = AlphaAnythingPipeline.from_pretrained(
+    "alphaanything/checkpoints/flux2_klein_base_9b_t2rgba",
+    adapter_name="t2rgba",
+    device="cuda",
+)
+# Optionally mount a second adapter on the same base model
+pipe.load_adapter("alphaanything/checkpoints/flux2_klein_base_9b_i2rgba", name="i2rgba")
+
+# RGBA generation (LoRA + alpha branch ON)
+rgba = pipe(prompt="A delicate glass butterfly with translucent wings.", adapter="t2rgba", enable_alpha=True, seed=42)
+rgba.save("butterfly_rgba.png")
+
+# Native base-model RGB generation (LoRA + alpha branch OFF)
+rgb = pipe(prompt="A delicate glass butterfly resting on a wooden desk.", adapter="t2rgba", enable_alpha=False, seed=42)
+rgb.save("butterfly_rgb.png")
+
+# Image-to-RGBA on the same resident base model
+extracted = pipe(
+    image="assets/poster.png",
+    description="The potted monstera on the left.",
+    adapter="i2rgba",
+    enable_alpha=True,
+    seed=42,
+)
+extracted.save("monstera_rgba.png")
+```
+
+To keep one model resident on GPU and serve HTTP requests (optional dependencies: `pip install fastapi uvicorn python-multipart`):
+
+```bash
+python scripts/serve.py \
+  --checkpoint t2rgba=alphaanything/checkpoints/flux2_klein_base_9b_t2rgba \
+               i2rgba=alphaanything/checkpoints/flux2_klein_base_9b_i2rgba \
+  --port 8000
+
+# Text-to-RGBA (enable_alpha=true) or native RGB (enable_alpha=false)
+curl -X POST http://localhost:8000/generate \
+  -F "adapter=t2rgba" -F "enable_alpha=true" -F "seed=42" \
+  -F "prompt=A delicate glass butterfly with translucent wings." \
+  --output butterfly_rgba.png
+
+# Image-to-RGBA (foreground or background extraction)
+curl -X POST http://localhost:8000/generate \
+  -F "adapter=i2rgba" -F "enable_alpha=true" -F "seed=42" \
+  -F "image=@assets/poster.png" \
+  -F "description=The potted monstera on the left." \
+  --output monstera_rgba.png
 ```
 
 </details>

@@ -66,7 +66,14 @@ class SinglePassRGBAQwenVAE(nn.Module):
         score = self.alpha_decoder.ea_score_head(alpha)
         return rgb[:, :, 0], score[:, :, 0]
 
+    def decode_rgb(self, normalized_latents: torch.Tensor, *, clamp_rgb: bool = True) -> torch.Tensor:
+        value = self._denormalize(normalized_latents.to(next(self.vae.parameters())))
+        rgb = self.vae.decode(value, return_dict=False)[0][:, :, 0]
+        return rgb.clamp(-1.0, 1.0) if clamp_rgb else rgb
+
     def forward(self, value: torch.Tensor, *, operation: str = "decode_rgba", clamp_rgb: bool = True):
+        if operation == "decode_rgb":
+            return self.decode_rgb(value, clamp_rgb=clamp_rgb)
         if operation != "decode_rgba":
             raise ValueError(f"Unsupported RGBA VAE operation: {operation!r}.")
         return self.decode_rgba(value, clamp_rgb=clamp_rgb)

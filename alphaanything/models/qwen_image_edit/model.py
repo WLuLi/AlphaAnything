@@ -54,6 +54,7 @@ def _encode_prompt(prompt_pipeline, condition_tensor, prompt, *, device, max_seq
 @torch.inference_mode()
 def sample_qwen_edit_rgba(
     *, example, config, transformer, rgba_vae, scheduler, prompt_pipeline, device, weight_dtype, generator,
+    enable_alpha: bool = True,
 ):
     from diffusers.pipelines.qwenimage.pipeline_qwenimage_edit_plus import calculate_shift, retrieve_timesteps
 
@@ -126,10 +127,15 @@ def sample_qwen_edit_rgba(
         packed_latents, height=int(condition_rgb.shape[-2]), width=int(condition_rgb.shape[-1]),
         vae_scale_factor=2 ** len(vae.temperal_downsample),
     )
-    rgb, score = rgba_vae(latents, operation="decode_rgba")
     out_size = example["condition_pixel_values"].shape[-2:]
+    if enable_alpha:
+        rgb, score = rgba_vae(latents, operation="decode_rgba")
+        if rgb.shape[-2:] != out_size:
+            rgb = F.interpolate(rgb, size=out_size, mode="bilinear", align_corners=False)
+        if score.shape[-2:] != out_size:
+            score = F.interpolate(score, size=out_size, mode="bilinear", align_corners=False)
+        return rgb, ea_score_to_alpha(score)
+    rgb = rgba_vae(latents, operation="decode_rgb")
     if rgb.shape[-2:] != out_size:
         rgb = F.interpolate(rgb, size=out_size, mode="bilinear", align_corners=False)
-    if score.shape[-2:] != out_size:
-        score = F.interpolate(score, size=out_size, mode="bilinear", align_corners=False)
-    return rgb, ea_score_to_alpha(score)
+    return rgb, None

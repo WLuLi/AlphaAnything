@@ -8,6 +8,7 @@ from typing import Any
 LORA_FILENAME = "pytorch_lora_weights.safetensors"
 ALPHA_FILENAME = "alpha_decoder.safetensors"
 CONFIG_FILENAME = "adapter_config.json"
+EXTRACTION_PREFIX = "Extract the object described by the text, preserving fine details and transparency:"
 TASKS = {
     "flux2_klein": {"text_to_rgba", "image_to_rgba"},
     "qwen_image": {"text_to_rgba"},
@@ -35,21 +36,54 @@ def read_adapter_config(checkpoint: str | Path) -> dict[str, Any]:
     return config
 
 
-def load_adapter_bundle(pipe, rgba_vae, checkpoint: str | Path, config: dict[str, Any]) -> None:
-    """Load LoRA and alpha branch weights and match the configured LoRA alpha/rank scale."""
+def set_lora_enabled(
+    pipe,
+    enabled: bool,
+    *,
+    adapter_name: str | None = None,
+    scale: float = 1.0,
+) -> None:
+    """Toggle transformer LoRA layers without mutating or fusing base weights."""
+    if enabled:
+        if adapter_name is None:
+            raise ValueError("adapter_name is required when enabling LoRA.")
+        if hasattr(pipe, "enable_lora"):
+            pipe.enable_lora()
+        elif hasattr(pipe.transformer, "enable_adapters"):
+            pipe.transformer.enable_adapters()
+        pipe.set_adapters([adapter_name], adapter_weights=[scale])
+        return
+    if hasattr(pipe, "disable_lora"):
+        pipe.disable_lora()
+    elif hasattr(pipe.transformer, "disable_adapters"):
+        pipe.transformer.disable_adapters()
+
+
+def load_adapter_bundle(
+    pipe,
+    rgba_vae,
+    checkpoint: str | Path,
+    config: dict[str, Any],
+    *,
+    adapter_name: str | None = None,
+    activate: bool = True,
+) -> tuple[str, float]:
+    """Load LoRA and alpha branch weights and return (adapter_name, scale)."""
     from safetensors.torch import load_file
     from alphaanything.utils.lora import lora_adapter_weight_for_config
 
     lora_cfg = config["lora"]
-    adapter_name = str(lora_cfg.get("adapter_name", "alphaanything"))
-    pipe.load_lora_weights(str(checkpoint), weight_name=LORA_FILENAME, adapter_name=adapter_name)
-    scale = lora_adapter_weight_for_config(pipe.transformer, adapter_name, lora_cfg)
-    pipe.set_adapters([adapter_name], adapter_weights=[scale])
+    resolved_name = str(adapter_name or lora_cfg.get("adapter_name", "alphaanything"))
+    pipe.load_lora_weights(str(checkpoint), weight_name=LORA_FILENAME, adapter_name=resolved_name)
+    scale = lora_adapter_weight_for_config(pipe.transformer, resolved_name, lora_cfg)
+    if activate:
+        set_lora_enabled(pipe, True, adapter_name=resolved_name, scale=scale)
     rgba_vae.load_adapter_state_dict(load_file(str(Path(checkpoint) / ALPHA_FILENAME), device="cpu"))
     pipe.transformer.requires_grad_(False).eval()
     if getattr(pipe, "text_encoder", None) is not None:
         pipe.text_encoder.requires_grad_(False).eval()
     rgba_vae.requires_grad_(False).eval()
+    return resolved_name, scale
 
 
 def adapter_metadata(config: dict[str, Any], *, backbone: str, task: str, step: int) -> dict[str, Any]:

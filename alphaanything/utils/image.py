@@ -25,6 +25,16 @@ def _to_uint8_hwc(image: torch.Tensor):
     return (image.float().clamp(0, 1).permute(1, 2, 0).cpu().numpy() * 255.0 + 0.5).clip(0, 255).astype("uint8")
 
 
+def tensor_to_rgb_pil(rgb: torch.Tensor) -> Image.Image:
+    return Image.fromarray(_to_uint8_hwc(to01(rgb.detach().float().cpu())), mode="RGB")
+
+
+def tensor_to_rgba_pil(rgb: torch.Tensor, alpha: torch.Tensor) -> Image.Image:
+    rgb01 = to01(rgb.detach().float().cpu())
+    alpha01 = alpha.detach().float().cpu().clamp(0, 1)
+    return Image.fromarray(_to_uint8_hwc(torch.cat([rgb01, alpha01], dim=0)), mode="RGBA")
+
+
 @torch.no_grad()
 def save_infer_sample(
     output_dir: Path,
@@ -37,7 +47,6 @@ def save_infer_sample(
     rgb01 = to01(rgb.float().cpu())
     alpha01 = alpha.float().cpu().clamp(0, 1)
     checker = rgba_on_checker(rgb.unsqueeze(0).float().cpu(), alpha.unsqueeze(0).float().cpu())[0]
-    rgba = torch.cat([rgb01, alpha01], dim=0)
 
     paths = paths if paths is not None else {
         "rgba": output_dir / f"{prefix}_rgba.png",
@@ -47,7 +56,7 @@ def save_infer_sample(
     }
     for path in paths.values():
         path.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(_to_uint8_hwc(rgba), mode="RGBA").save(paths["rgba"])
+    tensor_to_rgba_pil(rgb, alpha).save(paths["rgba"])
     Image.fromarray(_to_uint8_hwc(rgb01), mode="RGB").save(paths["rgb"])
     Image.fromarray(_to_uint8_hwc(alpha01)[..., 0], mode="L").save(paths["alpha"])
     Image.fromarray(_to_uint8_hwc(checker), mode="RGB").save(paths["checker"])
@@ -56,5 +65,5 @@ def save_infer_sample(
 
 def save_normalized_rgb(path: Path, image: torch.Tensor) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(_to_uint8_hwc(to01(image.detach())), mode="RGB").save(path)
+    tensor_to_rgb_pil(image).save(path)
     return str(path)

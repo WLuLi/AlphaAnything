@@ -2,13 +2,10 @@
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 from pathlib import Path
 
-from alphaanything.checkpoint import read_adapter_config
-
-EXTRACTION_PREFIX = "Extract the object described by the text, preserving fine details and transparency:"
+from alphaanything.checkpoint import EXTRACTION_PREFIX, read_adapter_config
 
 
 def resolve_input(args, task: str) -> tuple[str, Path | None]:
@@ -47,6 +44,7 @@ def main(backbone: str, task: str) -> None:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--mixed-precision", choices=["no", "fp16", "bf16"])
     parser.add_argument("--local-files-only", action="store_true")
+    parser.add_argument("--disable-alpha", action="store_true", help="Disable LoRA and alpha branch to run base RGB generation.")
     args = parser.parse_args()
 
     if task == "image_to_rgba" and (args.height is not None or args.width is not None):
@@ -60,44 +58,45 @@ def main(backbone: str, task: str) -> None:
     for key in ("height", "width", "num_inference_steps", "guidance_scale", "negative_prompt", "seed", "mixed_precision"):
         if getattr(args, key) is not None:
             params[key] = getattr(args, key)
-    config["inference"] = params
     if args.base_model:
         config["base_model"] = args.base_model
-        config["model"]["pretrained_model_name_or_path"] = args.base_model
-    config["model"]["local_files_only"] = args.local_files_only
 
     prompt, image_path = resolve_input(args, task)
     directory = Path(args.output_dir)
 
-    import torch
-    from PIL import Image
-    from alphaanything.data.canvas import prepare_i2rgba_image
-    from alphaanything.utils.image import save_infer_sample
-    from alphaanything.utils.model import resolve_weight_dtype
+    from alphaanything.pipeline import AlphaAnythingPipeline
+    from alphaanything.utils.image import save_infer_sample, save_normalized_rgb
 
-    device = torch.device(args.device)
-    dtype = torch.float32 if (device.type == "cpu" and args.mixed_precision is None) else resolve_weight_dtype(params["mixed_precision"])
-    backend = importlib.import_module(f"alphaanything.models.{backbone}.pipeline")
-    pipe, rgba_vae = backend.load_model(config, args.checkpoint, device, dtype)
+    enable_alpha = not args.disable_alpha
+    pipeline = AlphaAnythingPipeline.from_pretrained(
+        args.checkpoint,
+        base_model=args.base_model,
+        device=args.device,
+        mixed_precision=args.mixed_precision,
+        local_files_only=args.local_files_only,
+        enable_alpha=enable_alpha,
+    )
 
     directory.mkdir(parents=True, exist_ok=True)
-    image = None
-    height, width = int(params["height"]), int(params["width"])
-    if image_path is not None:
-        with Image.open(image_path) as source:
-            image = prepare_i2rgba_image(source)
-        width, height = image.size
-
     seed = int(params["seed"])
-    rgb, alpha = backend.generate(
-        pipe, rgba_vae, prompt=prompt, image=image, height=height, width=width,
+    rgb, alpha = pipeline.generate_tensors(
+        prompt=prompt,
+        image=image_path,
+        enable_alpha=enable_alpha,
+        height=args.height,
+        width=args.width,
         num_inference_steps=int(params["num_inference_steps"]),
-        guidance_scale=float(params["guidance_scale"]), negative_prompt=params["negative_prompt"],
-        generator=torch.Generator(device=device).manual_seed(seed), config=config,
+        guidance_scale=float(params["guidance_scale"]),
+        negative_prompt=params["negative_prompt"],
+        seed=seed,
     )
-    paths = {"rgba": directory / "sample.png"}
-    paths.update({name: directory / "previews" / name / "sample.png" for name in ("rgb", "alpha", "checker")})
-    save_infer_sample(directory, "sample", rgb, alpha, paths=paths)
+    height, width = int(rgb.shape[-2]), int(rgb.shape[-1])
+    if alpha is not None:
+        paths = {"rgba": directory / "sample.png"}
+        paths.update({name: directory / "previews" / name / "sample.png" for name in ("rgb", "alpha", "checker")})
+        save_infer_sample(directory, "sample", rgb, alpha, paths=paths)
+    else:
+        save_normalized_rgb(directory / "sample.png", rgb)
     print(f"Saved {directory / 'sample.png'}")
 
     metadata = {
@@ -105,12 +104,13 @@ def main(backbone: str, task: str) -> None:
         "task": task,
         "base_model": config["base_model"],
         "checkpoint_step": config.get("training_step"),
+        "alpha_enabled": enable_alpha,
         "inference": params,
         "prompt": prompt,
         "seed": seed,
         "height": height,
         "width": width,
-        "rgba": "sample.png",
+        "output": "sample.png",
     }
     (directory / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Saved output and previews to {directory}")
+    print(f"Saved output to {directory}")
